@@ -1,0 +1,103 @@
+---
+description: Superlight context tracker. One-line footer every reply; handoff when red. Cursor has no usage API — numbers are self-estimates marked with ~.
+alwaysApply: true
+---
+
+# Context tracker (footer)
+
+## Format — last line of every reply
+
+Nothing after it. Every reply, including one-word answers.
+
+**Traffic color (one row only — Cursor chat has no true text color):**
+
+| State | How to emit the footer |
+|---|---|
+| 🟢 green (`chat` < 40K) | a single-line `diff` fence whose only line starts with `+` |
+| 🟡 no color (40–90K) | plain text (no fence) + `context growing` |
+| 🔴 red (`chat` > 90K) | a single-line `diff` fence whose only line starts with `-` |
+
+Green example (the whole footer is this fence — one row):
+
+````
+```diff
++ ⚡ Turn 3 | ~18K chat / ~88K total | 🟢
+```
+````
+
+Yellow (plain — no fence):
+
+```
+⚡ Turn 8 | ~55K chat / ~125K total | 🟡 context growing
+```
+
+Red:
+
+````
+```diff
+- ⚡ Turn 14 | ~96K chat / ~166K total | 🔴 handoff written → audits/handoff/2026-08-02-1200-slug.md
+```
+````
+
+If a client mangles single-line diff fences, fall back to the plain emoji line for all three states. Never invent a three-row color block.
+
+## Numbers (Cursor — estimate)
+
+- `N` = user message count, 1-indexed (human turns only).
+- `chat ≈ (N × 2) + (returning × 2) + (bulky × 10)` in K tokens.
+  - **returning** (~2K): file reads, greps, searches, shell with real output, MCP results.
+  - **bulky** (~10K instead of 2K): web search, file >~500 lines, wide query, long listings.
+  - **free** (0K): writes, edits, deletes, todos.
+- `total = chat + baseline`. Default `baseline ≈ 47` for this Databricks_Knowledge Cursor workspace (remeasured 2026-08-02: GATE demotion + eToro toggles + MCP names-only + dwh-domain hub descriptions trimmed 10.64K→0.68K; was ≈70). Lean installs ~40–55. Baseline is **not** a reason to start a new thread.
+- Always prefix estimates with `~`.
+
+## User overhead (separate from chat/total)
+
+On **turn 1**, if `%TEMP%/etoro-context-overhead.json` is missing/stale, run once via Shell (fail open — skip on error).
+
+**Before** the Shell call, output this exact one-liner to the user (so the wait is not silent):
+
+`⏳ Evaluating user context overhead (~5–20s first time)…`
+
+Then run:
+
+`python ~/.cursor/plugins/local/etoro-context-tracker/scripts/measure_user_overhead.py`
+
+(If the local plugin path is missing, use the repo copy under `plugins/etoro-context-tracker/scripts/`.)
+
+Keep `user_overhead_k` for the thread. Do not re-run every turn. Skip the wait line when the cache is already warm (no Shell call).
+
+| Condition | Action (once per thread) |
+|---|---|
+| `user_overhead >= 20` | Offer on turn 1 |
+| `user_overhead >= 20` and turn >= 10 | Offer once (if missed turn 1) |
+| below 20 | Silence |
+
+Offer text (verbatim):
+
+`💡 overhead: user baseline ~{N}K (rules+skills+MCP) — say **audit overhead** to shrink it.`
+
+When the user says **audit overhead**, load the `context-overhead-audit` skill and follow it. Do not embed the audit playbook here.
+
+## Light — on `chat` only
+
+| Light | `chat` | Extra |
+|---|---|---|
+| 🟢 | < 40K | — |
+| 🟡 | 40–90K | `context growing` |
+| 🔴 | > 90K | `handoff written → {path}` |
+
+## Red → write a handoff (once per thread)
+
+Before replying, write (first path that exists as a parent dir, else create under home):
+
+1. `audits/handoff/{YYYY-MM-DD-HHmm}-{slug}.md`
+2. `scratch/handoff/{YYYY-MM-DD-HHmm}-{slug}.md`
+3. `~/.cursor/handoffs/{YYYY-MM-DD-HHmm}-{slug}.md`
+
+Sections: Goal · Decisions made · Files changed · Verified · Open threads · Exact next step.
+After the first write, keep showing 🔴 + the same path — do not rewrite every turn.
+
+## Suppress
+
+User says "stop nudging" → drop the footer **and** overhead offers for the rest of the thread.

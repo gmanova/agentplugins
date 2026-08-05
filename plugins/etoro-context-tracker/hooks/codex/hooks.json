@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CODEX_PLUGIN_ROOT}/scripts/inject_banner.py\" codex || python \"${CODEX_PLUGIN_ROOT}/scripts/inject_banner.py\" codex",
+            "commandWindows": "& { $p = Join-Path $env:USERPROFILE '.codex/plugins/etoro-context-tracker/scripts/inject_banner.py'; if (Get-Command python3 -ErrorAction SilentlyContinue) { python3 $p codex } else { python $p codex } }",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

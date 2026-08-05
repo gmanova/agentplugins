@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agentplugins",
+  "description": "Lightweight agent plugins for Cursor, Claude Code, and Codex. Start with etoro-context-tracker.",
+  "owner": {
+    "name": "gmanova",
+    "email": "gmanova@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "etoro-context-tracker",
+      "description": "Superlight token-conservation footer + red-handoff. Cursor self-estimates; Claude/Codex report exact usage.",
+      "author": {
+        "name": "gmanova",
+        "email": "gmanova@users.noreply.github.com"
+      },
+      "source": "./plugins/etoro-context-tracker",
+      "category": "productivity",
+      "homepage": "https://github.com/gmanova/agentplugins/tree/main/plugins/etoro-context-tracker"
+    }
+  ]
+}
