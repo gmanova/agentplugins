@@ -1,0 +1,13 @@
+# Force LF in the repo so macOS/Linux bash scripts and hooks don't break
+# when cloned from a Windows authoring machine.
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.mdc text eol=lf
+*.ps1 text eol=crlf
+
+# Keep shell scripts executable after clone on Unix
+plugins/etoro-context-tracker/scripts/install.sh text eol=lf
