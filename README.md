@@ -22,6 +22,7 @@ cd agentplugins/plugins/etoro-context-tracker
 python3 scripts/install.py --target all
 
 # Wrappers
+chmod +x scripts/install.sh   # once, if needed
 ./scripts/install.sh --target all          # macOS / Linux
 .\scripts\install.ps1 -Target All          # Windows PowerShell
 ```

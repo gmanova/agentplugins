@@ -15,10 +15,11 @@ You are auditing **user-controlled** prompt cost only — not built-in tools, no
 ## 1. Measure (disk trigger number)
 
 ```bash
-python "${PLUGIN_ROOT}/scripts/measure_user_overhead.py" --force
+python3 "${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT}}/scripts/measure_user_overhead.py" --force \
+  || python "${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT}}/scripts/measure_user_overhead.py" --force
 ```
 
-If `PLUGIN_ROOT` is unknown, resolve from the installed plugin path (Cursor: `~/.cursor/plugins/local/etoro-context-tracker`, or the repo `plugins/etoro-context-tracker`).
+If neither `CLAUDE_PLUGIN_ROOT` nor `PLUGIN_ROOT` is set, resolve from the installed plugin path (Cursor: `~/.cursor/plugins/local/etoro-context-tracker`, Claude cache under `~/.claude/plugins/…`, or the repo `plugins/etoro-context-tracker`). Prefer **`python3`** (stock macOS often has no `python`).
 
 Read JSON fields: `user_overhead_k`, `layers`, `top_offenders`, `counts`.
 

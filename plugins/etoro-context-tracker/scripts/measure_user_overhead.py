@@ -69,7 +69,7 @@ def _workspace_roots() -> list[Path]:
 
 
 def _parse_frontmatter(text: str) -> dict[str, str]:
-    m = re.match(r"^---\n(.*?)\n---", text, re.S)
+    m = re.match(r"^---\r?\n(.*?)\r?\n---", text, re.S)
     if not m:
         return {}
     fm = m.group(1)

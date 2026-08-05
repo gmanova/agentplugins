@@ -1,6 +1,8 @@
 # Context tracker (Codex)
 
-This file is installed into `~/.codex/AGENTS.md` (or appended) by `scripts/install.ps1 -Target Codex`.
+This file is installed into `~/.codex/AGENTS.md` (or appended) by
+`python3 scripts/install.py --target codex` (or `./scripts/install.sh --target codex` /
+`.\scripts\install.ps1 -Target Codex`).
 
 The `UserPromptSubmit` hook injects an `⚡ CONTEXT` system message with **exact** numbers
 from the session rollout's `token_count` events (`input_tokens`, `model_context_window`).
