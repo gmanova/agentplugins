@@ -136,10 +136,12 @@ def install_claude(plugin_root: Path) -> None:
         [claude, "plugin", "marketplace", "add", str(marketplace_root)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
-    if add.stdout.strip():
+    if (add.stdout or "").strip():
         print(add.stdout.rstrip())
-    if add.stderr.strip():
+    if (add.stderr or "").strip():
         print(add.stderr.rstrip())
 
     spec = f"{PLUGIN_NAME}@{MARKETPLACE_NAME}"
@@ -148,10 +150,12 @@ def install_claude(plugin_root: Path) -> None:
         [claude, "plugin", "install", spec],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
-    if inst.stdout.strip():
+    if (inst.stdout or "").strip():
         print(inst.stdout.rstrip())
-    if inst.stderr.strip():
+    if (inst.stderr or "").strip():
         print(inst.stderr.rstrip())
     if inst.returncode != 0:
         print(f"Claude install failed (exit {inst.returncode}). Session-only fallback:")
@@ -172,9 +176,11 @@ def install_codex(plugin_root: Path, python: str) -> None:
         [python, str(merge_hooks), str(hooks_file), python, str(scripts_dest)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
     )
-    msg = (result.stdout or result.stderr or "").strip() or f"exit {result.returncode}"
+    msg = ((result.stdout or "") + (result.stderr or "")).strip() or f"exit {result.returncode}"
     if result.returncode == 0:
         print(f"Codex: hooks merge -> {hooks_file} ({msg})")
     else:
@@ -187,9 +193,11 @@ def install_codex(plugin_root: Path, python: str) -> None:
         [python, str(merge_agents), str(agents), str(snippet)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
     )
-    print(f"Codex: AGENTS.md {(agents_result.stdout or agents_result.stderr or '').strip()}")
+    print(f"Codex: AGENTS.md {((agents_result.stdout or '') + (agents_result.stderr or '')).strip()}")
     print("Restart Codex / open a new session to load hooks.")
 
 
