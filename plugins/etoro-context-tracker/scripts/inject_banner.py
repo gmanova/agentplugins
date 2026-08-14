@@ -18,10 +18,17 @@ import sys
 from pathlib import Path
 
 
-WARN_CTX = 40_000
-CRIT_CTX = 90_000
+# Fractions of the context window, chosen so a 200K window keeps the original
+# 40K / 90K trip points and a 1M window scales instead of sitting permanently red.
+WARN_RATIO = 0.20
+CRIT_RATIO = 0.45
 WARN_TURNS = 20
 CRIT_TURNS = 40
+
+# A session may run on a larger window than the 200K default (1M beta). Nothing in
+# the transcript states the window, so infer it from the largest context actually
+# observed rather than reporting an impossible >100%.
+WINDOW_TIERS = (200_000, 500_000, 1_000_000)
 
 OFFER_IMMEDIATE_K = 20
 OFFER_DEFERRED_K = 20
@@ -46,10 +53,20 @@ def _fmt_tok(n: int) -> str:
     return str(n)
 
 
-def _light(ctx: int, turns: int) -> tuple[str, str]:
-    if ctx >= CRIT_CTX or turns >= CRIT_TURNS:
+def _window_for(peak_ctx: int) -> int:
+    override = (os.environ.get("CONTEXT_TRACKER_WINDOW") or "").strip()
+    if override.isdigit() and int(override) > 0:
+        return int(override)
+    for tier in WINDOW_TIERS:
+        if peak_ctx <= tier:
+            return tier
+    return WINDOW_TIERS[-1]
+
+
+def _light(ctx: int, turns: int, window: int) -> tuple[str, str]:
+    if ctx >= window * CRIT_RATIO or turns >= CRIT_TURNS:
         return "🔴", "handoff soon — write audits/handoff/ then start a fresh thread"
-    if ctx >= WARN_CTX or turns >= WARN_TURNS:
+    if ctx >= window * WARN_RATIO or turns >= WARN_TURNS:
         return "🟡", "context growing"
     return "🟢", ""
 
@@ -218,7 +235,12 @@ def parse_claude(transcript: Path) -> dict | None:
         return None
     turns = 0
     last_ctx = 0
+    peak_ctx = 0
     cost = 0.0
+    # The compaction request itself is logged with the full pre-compact context as its
+    # input. Reading it back would report the tokens that were just discarded, so any
+    # usage row older than the summary is stale until the next real turn lands.
+    stale_ctx = False
     # Rough Anthropic-ish rates for relative discipline, not billing truth.
     rates = {"in": 3.0 / 1e6, "out": 15.0 / 1e6, "cr": 0.30 / 1e6, "cw": 3.75 / 1e6}
     try:
@@ -233,6 +255,10 @@ def parse_claude(transcript: Path) -> dict | None:
                     continue
                 role = (obj.get("type") or obj.get("role") or "").lower()
                 msg = obj.get("message") or obj
+                if obj.get("isCompactSummary") or (
+                    isinstance(msg, dict) and msg.get("isCompactSummary")
+                ):
+                    stale_ctx = True
                 if role in ("user", "human") or obj.get("type") == "user":
                     # Skip tool-result echoes when possible
                     content = msg.get("content") if isinstance(msg, dict) else None
@@ -249,12 +275,21 @@ def parse_claude(transcript: Path) -> dict | None:
                     cw = int(u.get("cache_creation_input_tokens") or 0)
                     out = int(u.get("output_tokens") or 0)
                     last_ctx = inp + cr  # visible context roughly
+                    peak_ctx = max(peak_ctx, last_ctx)
+                    stale_ctx = False
                     cost += inp * rates["in"] + out * rates["out"] + cr * rates["cr"] + cw * rates["cw"]
     except OSError:
         return None
     if last_ctx <= 0 and turns <= 0:
         return None
-    return {"turns": turns, "ctx": last_ctx, "cost": cost, "window": 200_000, "exact": True}
+    return {
+        "turns": turns,
+        "ctx": 0 if stale_ctx else last_ctx,
+        "cost": cost,
+        "window": _window_for(peak_ctx),
+        "exact": True,
+        "pending": stale_ctx,
+    }
 
 
 def parse_codex(transcript: Path) -> dict | None:
@@ -328,12 +363,16 @@ def build_line(stats: dict | None) -> str:
     ctx = int(stats.get("ctx") or 0)
     window = int(stats.get("window") or 200_000)
     cost = float(stats.get("cost") or 0.0)
-    pct = 100.0 * ctx / window if window else 0.0
-    light, action = _light(ctx, turns)
-    line = (
-        f"⚡ CONTEXT turn={turn} | ctx={_fmt_tok(ctx)}/{_fmt_tok(window)} "
-        f"({pct:.0f}%) | ${cost:.3f} | {light}"
-    )
+    if stats.get("pending"):
+        light, action = _light(0, turns, window)
+        line = f"⚡ CONTEXT turn={turn} | ctx=fresh after compact | ${cost:.3f} | {light}"
+    else:
+        pct = 100.0 * ctx / window if window else 0.0
+        light, action = _light(ctx, turns, window)
+        line = (
+            f"⚡ CONTEXT turn={turn} | ctx={_fmt_tok(ctx)}/{_fmt_tok(window)} "
+            f"({pct:.0f}%) | ${cost:.3f} | {light}"
+        )
     if action:
         line += f" — {action}"
     if stats.get("reset_reason"):
