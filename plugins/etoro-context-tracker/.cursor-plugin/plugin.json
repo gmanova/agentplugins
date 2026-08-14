@@ -1,7 +1,7 @@
 {
   "name": "etoro-context-tracker",
-  "version": "0.2.0",
-  "description": "Superlight token-conservation plugin. One-line context footer; handoff when red; session user-overhead measure with audit-overhead offer. Cursor self-estimates; Claude/Codex report exact usage.",
+  "version": "0.3.0",
+  "description": "Superlight token-conservation plugin. Footer + red handoff; compact/clear epoch reset (Claude/Codex hooks; Cursor/Genie instructions).",
   "author": {
     "name": "gmanova",
     "email": "gmanova@users.noreply.github.com"

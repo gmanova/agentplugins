@@ -11,6 +11,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/reset_baseline.py\" claude || python \"${CLAUDE_PLUGIN_ROOT}/scripts/reset_baseline.py\" claude",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

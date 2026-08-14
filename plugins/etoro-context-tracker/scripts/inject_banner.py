@@ -54,9 +54,98 @@ def _light(ctx: int, turns: int) -> tuple[str, str]:
     return "🟢", ""
 
 
+def _temp_dir() -> Path:
+    return Path(os.environ.get("TEMP") or os.environ.get("TMPDIR") or os.environ.get("TMP") or "/tmp")
+
+
 def _offer_state_path() -> Path:
-    base = os.environ.get("TEMP") or os.environ.get("TMPDIR") or os.environ.get("TMP") or "/tmp"
-    return Path(base) / "etoro-overhead-offer-shown.json"
+    return _temp_dir() / "etoro-overhead-offer-shown.json"
+
+
+def _baseline_path() -> Path:
+    return _temp_dir() / "etoro-context-tracker-baseline.json"
+
+
+def session_fingerprint(mode: str, data: dict) -> str:
+    """Stable key for baseline / offer state across compact resets."""
+    tp = data.get("transcript_path") or data.get("transcriptPath") or ""
+    sid = data.get("session_id") or data.get("sessionId") or ""
+    parts = [mode, str(tp).replace("\\", "/"), str(sid)]
+    return "|".join(parts)
+
+
+def write_baseline(payload: dict) -> None:
+    path = _baseline_path()
+    try:
+        existing: dict = {}
+        if path.is_file():
+            try:
+                existing = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                existing = {}
+        sessions = existing.get("sessions") if isinstance(existing.get("sessions"), dict) else {}
+        fp = str(payload.get("fp") or "")
+        if not fp:
+            return
+        sessions[fp] = payload
+        path.write_text(
+            json.dumps({"sessions": sessions}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+
+
+def load_baseline(fp: str) -> dict | None:
+    path = _baseline_path()
+    if not fp or not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        sessions = data.get("sessions") if isinstance(data, dict) else None
+        if isinstance(sessions, dict) and fp in sessions:
+            row = sessions[fp]
+            return row if isinstance(row, dict) else None
+        # Legacy single-object shape
+        if isinstance(data, dict) and data.get("fp") == fp:
+            return data
+    except (OSError, json.JSONDecodeError):
+        return None
+    return None
+
+
+def apply_baseline(stats: dict | None, fp: str) -> dict | None:
+    """Subtract turns/cost accumulated before the last compact/clear."""
+    if not stats:
+        return stats
+    base = load_baseline(fp)
+    if not base:
+        return stats
+    out = dict(stats)
+    turns = int(out.get("turns") or 0)
+    cost = float(out.get("cost") or 0.0)
+    turns_at = int(base.get("turns_at_reset") or 0)
+    cost_at = float(base.get("cost_at_reset") or 0.0)
+    out["turns"] = max(0, turns - turns_at)
+    out["cost"] = max(0.0, cost - cost_at)
+    out["reset_reason"] = str(base.get("reason") or "")
+    return out
+
+
+def clear_offer_shown(fingerprint: str) -> None:
+    """Allow the overhead offer to fire again after compact/clear."""
+    path = _offer_state_path()
+    if not path.is_file():
+        return
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data.get("fingerprint") == fingerprint:
+            path.unlink(missing_ok=True)  # type: ignore[arg-type]
+    except (OSError, json.JSONDecodeError, TypeError):
+        try:
+            path.unlink()
+        except OSError:
+            pass
 
 
 def _load_user_overhead() -> dict | None:
@@ -247,6 +336,8 @@ def build_line(stats: dict | None) -> str:
     )
     if action:
         line += f" — {action}"
+    if stats.get("reset_reason"):
+        line += f"\n(epoch after {stats['reset_reason']})"
     line += "\nEmit as the LAST line of your reply (one-row color: 🟢=`diff`/`+`, 🟡=plain, 🔴=`diff`/`-`). Exact numbers — do not recompute."
     line += overhead_suffix(turn)
     return line
@@ -261,11 +352,13 @@ def main() -> int:
     mode = (sys.argv[1] if len(sys.argv) > 1 else "claude").lower()
     data = _read_stdin()
     stats = None
+    fp = session_fingerprint(mode, data)
 
     if mode == "claude":
         tp = data.get("transcript_path") or data.get("transcriptPath")
         if tp:
             stats = parse_claude(Path(tp))
+        stats = apply_baseline(stats, fp)
         banner = build_line(stats)
         # Claude Code UserPromptSubmit additionalContext
         out = {
@@ -285,6 +378,7 @@ def main() -> int:
         tp = data.get("transcript_path") or data.get("transcriptPath")
         path = Path(tp) if tp else find_codex_rollout(sid or None)
         stats = parse_codex(path) if path else None
+        stats = apply_baseline(stats, fp)
         banner = build_line(stats)
         print(json.dumps({"continue": True, "systemMessage": banner}, ensure_ascii=False))
         return 0

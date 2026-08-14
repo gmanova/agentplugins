@@ -7,10 +7,21 @@ Superlight **token-conservation** plugin. One job: keep you aware of conversatio
 | IDE | Numbers | Install |
 |---|---|---|
 | **Cursor** | Self-estimate (`~`) — no per-session usage API | `install.py --target cursor` → `~/.cursor/plugins/local/` |
-| **Claude Code** | Exact — transcript `message.usage` via thin hook | `install.py --target claude` (local marketplace) |
-| **Codex** | Exact — rollout `token_count` via thin hook | `install.py --target codex` (hooks merge; no marketplace) |
+| **Claude Code** | Exact — transcript `message.usage` via thin hook | `install.py --target claude` (marketplace) |
+| **Codex** | Exact — rollout `token_count` via thin hook | `install.py --target codex` (hooks merge) |
+| **Databricks Genie** | Self-estimate (`~`) via space Instructions | Paste [`instructions/genie-context-tracker.md`](instructions/genie-context-tracker.md) |
 
 Works on **macOS, Linux, and Windows** — one Python installer; thin `install.sh` / `install.ps1` wrappers.
+
+### Compact / clear reset
+
+| Surface | Mechanism |
+|---|---|
+| Claude / Codex | `SessionStart` hook (`compact\|clear`) writes a baseline; next footer counts turns since that epoch |
+| Cursor | Rule: after auto-compact, recount only visible human turns |
+| Genie | Same as Cursor, in space Instructions |
+
+After install: **Cursor** → Reload Window + new chat. **Claude/Codex** → new session (no Cursor reload required for those apps). **Genie** → paste/update Instructions in the Genie UI.
 
 Overlap note: `etoro-claude-statusline` (Guy Cohen) is a **Claude terminal statusline**. This plugin is the **in-chat footer + handoff** across Cursor / Claude / Codex. Complementary, not a duplicate.
 
@@ -116,11 +127,13 @@ python3 scripts/measure_user_overhead.py --force
 rules/context-tracker.mdc        Cursor alwaysApply footer + overhead trigger
 skills/context-tracker/SKILL.md  Claude skill
 skills/context-overhead-audit/   Opt-in audit playbook
-hooks/claude/hooks.json          UserPromptSubmit → exact banner
-hooks/codex/hooks.json           UserPromptSubmit → exact banner
-scripts/inject_banner.py         Shared Claude/Codex usage reader + overhead offer
+hooks/claude/hooks.json          UserPromptSubmit + SessionStart compact|clear
+hooks/codex/hooks.json           UserPromptSubmit + SessionStart compact|clear
+scripts/inject_banner.py         Shared Claude/Codex usage reader + baseline subtract
+scripts/reset_baseline.py        SessionStart compact|clear → write baseline
 scripts/measure_user_overhead.py Disk inventory of user overhead
 scripts/install.py               Cross-platform installer (canonical)
+instructions/genie-context-tracker.md  Paste into Genie space Instructions
 scripts/install.sh               macOS/Linux wrapper → install.py
 scripts/install.ps1              Windows wrapper → install.py
 scripts/merge_codex_hooks.py     Idempotent ~/.codex/hooks.json merge

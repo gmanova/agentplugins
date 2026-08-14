@@ -15,6 +15,10 @@ If context contains a `SESSION turn=` / `⚡ CONTEXT` / hook banner with real us
 
 Those numbers are **exact** (transcript `message.usage`). Do not recompute them.
 
+After `/compact` or `/clear`, the hook resets the counting epoch — treat the next
+footer as a fresh Turn 1 (or low N). Do not keep pre-compact red/handoff state
+unless the new banner still says red.
+
 If no hook banner is present, self-estimate and mark with `~` (same formula as the Cursor rule).
 
 ## User overhead offer

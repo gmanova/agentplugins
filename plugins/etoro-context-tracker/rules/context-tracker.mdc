@@ -51,6 +51,18 @@ If a client mangles single-line diff fences, fall back to the plain emoji line f
 - `total = chat + baseline`. Default `baseline ≈ 50` for a typical heavy Cursor workspace (always-on rules + MCP catalogs + tool schemas). Lean installs ~35–55. Baseline is **not** a reason to start a new thread.
 - Always prefix estimates with `~`.
 
+## Post-compact / new epoch (CRITICAL)
+
+Cursor auto-compacts when context is full. There is **no** compact hook — you must detect and reset yourself.
+
+**Detect** any of: a prior-conversation summary in context, truncated history, system note that older messages were compacted away, or a clear break where only recent turns remain.
+
+**Then:**
+- Set `N` = count of **human** turns still visible **after** that summary only. Do **not** count inferred pre-compact history.
+- Recompute `chat` / `total` from the new `N`.
+- Do **not** keep showing 🔴 + an old handoff path unless **post-compact** `chat` is still > 90K. If post-compact chat is green/yellow, show that light (and only write a new handoff if it goes red again).
+- New chat / cleared composer → Turn 1 as usual.
+
 ## User overhead (separate from chat/total)
 
 On **turn 1**, if the overhead cache is missing/stale (`$TEMP/etoro-context-overhead.json` on Windows, `$TMPDIR/etoro-context-overhead.json` on macOS/Linux — same file the measure script writes), run once via Shell (fail open — skip on error).

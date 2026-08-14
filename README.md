@@ -8,7 +8,16 @@ Repo: [github.com/gmanova/agentplugins](https://github.com/gmanova/agentplugins)
 
 | Plugin | What it does |
 |---|---|
-| [`etoro-context-tracker`](plugins/etoro-context-tracker/) | One-line context footer every reply; writes a handoff file when the thread goes red. Cursor self-estimates (`~`); Claude/Codex report exact usage. |
+| [`etoro-context-tracker`](plugins/etoro-context-tracker/) | One-line context footer every reply; handoff when red. Claude/Codex: exact usage + **reset on `/compact`/`/clear`**. Cursor/Genie: self-estimate + instruction reset after auto-compact. |
+
+### Compact / clear behavior
+
+| Surface | How reset works | After install |
+|---|---|---|
+| Claude Code | `SessionStart` hook (`compact\|clear`) writes baseline | **New Claude session** (no Cursor reload) |
+| Codex | Same SessionStart hook via `~/.codex/hooks.json` | **Restart Codex / new session** |
+| Cursor | Rule text: recount visible turns after auto-compact | **Developer: Reload Window** + new chat |
+| Databricks Genie | Paste [`instructions/genie-context-tracker.md`](plugins/etoro-context-tracker/instructions/genie-context-tracker.md) into space Instructions | Edit Instructions in Genie UI (no IDE reload) |
 
 ## Install (any OS)
 

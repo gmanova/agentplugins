@@ -11,6 +11,19 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CODEX_PLUGIN_ROOT}/scripts/reset_baseline.py\" codex || python \"${CODEX_PLUGIN_ROOT}/scripts/reset_baseline.py\" codex",
+            "commandWindows": "& { $p = Join-Path $env:USERPROFILE '.codex/plugins/etoro-context-tracker/scripts/reset_baseline.py'; if (Get-Command python3 -ErrorAction SilentlyContinue) { python3 $p codex } else { python $p codex } }",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

@@ -166,17 +166,17 @@ def install_codex(plugin_root: Path, python: str) -> None:
     print(f"Codex: plugin files -> {dest}")
 
     hooks_file = _home() / ".codex" / "hooks.json"
-    inject = dest / "scripts" / "inject_banner.py"
+    scripts_dest = dest / "scripts"
     merge_hooks = plugin_root / "scripts" / "merge_codex_hooks.py"
     result = subprocess.run(
-        [python, str(merge_hooks), str(hooks_file), python, str(inject)],
+        [python, str(merge_hooks), str(hooks_file), python, str(scripts_dest)],
         capture_output=True,
         text=True,
         check=False,
     )
     msg = (result.stdout or result.stderr or "").strip() or f"exit {result.returncode}"
-    if result.returncode == 0 and msg == "MERGED":
-        print(f"Codex: merged UserPromptSubmit hook into {hooks_file}")
+    if result.returncode == 0:
+        print(f"Codex: hooks merge -> {hooks_file} ({msg})")
     else:
         print(f"Codex: hook status: {msg}")
 

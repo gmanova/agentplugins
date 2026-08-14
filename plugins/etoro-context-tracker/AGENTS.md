@@ -17,6 +17,13 @@ Condense the hook message — do not reprint it raw:
 
 Exact — do not recompute. If the hook says tracker offline, self-estimate and mark with `~`.
 
+## Compact / clear reset
+
+`SessionStart` hooks with matcher `compact|clear` write a per-session baseline.
+After `/compact` or `/clear`, the next footer counts turns from that epoch (Turn ~1),
+not the full historical rollout. Do not keep a pre-compact red light unless post-reset
+ctx/turns still trip the threshold.
+
 ## One-row color
 
 | State | Emit |
