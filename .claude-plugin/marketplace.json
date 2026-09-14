@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "agentplugins",
-  "description": "Lightweight agent plugins for Cursor, Claude Code, and Codex. Start with etoro-context-tracker.",
+  "description": "Lightweight agent plugins for Cursor, Claude Code, and Codex.",
   "owner": {
     "name": "gmanova",
     "email": "gmanova@users.noreply.github.com"
@@ -17,6 +17,16 @@
       "source": "./plugins/etoro-context-tracker",
       "category": "productivity",
       "homepage": "https://github.com/gmanova/agentplugins/tree/main/plugins/etoro-context-tracker"
+    },
+    {
+      "name": "etoro-de-analytical",
+      "description": "DE analytical persona (Synapse DWH/BI/Dealing/eMoney + DE-Marketing). Dual Cursor/Claude.",
+      "author": {
+        "name": "gmanova",
+        "email": "gmanova@users.noreply.github.com"
+      },
+      "source": "./plugins/etoro-de-analytical",
+      "category": "data-engineering"
     }
   ]
 }

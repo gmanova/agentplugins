@@ -1,0 +1,9 @@
+{
+  "name": "etoro-de-analytical",
+  "displayName": "DE -- Analytical Writer",
+  "description": "DE/BI-hybrid persona for Synapse analytical SSDT (DWH_dbo/BI_DB_dbo/Dealing_*/eMoney_dbo/staging) and DE-Marketing. Dual Cursor + Claude Code.",
+  "version": "0.1.0",
+  "author": { "name": "gmanova", "email": "gmanova@users.noreply.github.com" },
+  "license": "UNLICENSED",
+  "keywords": ["data-engineering", "synapse", "dwh", "claude", "cursor", "persona"]
+}
