@@ -11,3 +11,8 @@
 9. Honest evidence only.
 10. Delegate Bonnie-land (prod SSDT) and ops monitoring out.
 11. Corrections → references/host policies → regenerate.
+12. Unattended-decision precedence: `references/dark-factory-decisions.md` — additive/no-downside
+    fixes and same-live-effect choices don't need a human; policy gates and genuine forks do.
+13. Classify Databricks objects (SP/view vs. notebook-owned table) before assuming a live edit is
+    durable, and never assume a Synapse table's partition scheme carries to its Databricks
+    mirror — `references/databricks-dab-uc.md`.
